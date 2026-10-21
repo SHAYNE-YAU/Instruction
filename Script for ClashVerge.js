@@ -1,22 +1,67 @@
+// Clash Verge Rev - Global Extension
+// Compatible with NCloud and Just My Socks (JMS).
+//
+// NCloud: use original custom AI rules.
+// JMS: use remote AI rule set with local supplements.
+//
+// Custom rules take precedence.
+// Subscription rules are preserved.
+// Device-specific DNS and TUN settings are not overwritten.
 
 function main(config, profileName) {
-  if (!config || typeof config !== "object") return config;
+  if (!config || typeof config !== "object") {
+    return config;
+  }
 
-  const customRules = [
+  // ==========================================
+  // 1. Detect NCloud or JMS
+  // ==========================================
+
+  const groupNames = Array.isArray(config["proxy-groups"])
+    ? config["proxy-groups"]
+        .filter(group => group && typeof group.name === "string")
+        .map(group => group.name)
+    : [];
+
+  const hasNCloud = groupNames.includes("NCloud");
+  const hasJMS = groupNames.includes("JMS");
+
+  let mode = null;
+
+  if (hasJMS && !hasNCloud) {
+    mode = "JMS";
+  } else if (hasNCloud && !hasJMS) {
+    mode = "NCloud";
+  } else if (hasJMS && hasNCloud) {
+    // If both are present, use the subscription profile name.
+    const name = String(profileName || "").toLowerCase();
+
+    if (name.includes("jms") || name.includes("just my socks")) {
+      mode = "JMS";
+    } else if (name.includes("ncloud")) {
+      mode = "NCloud";
+    }
+  }
+
+  // Do not modify an unidentified or ambiguous profile.
+  if (!mode) {
+    return config;
+  }
+
+  const PROXY_TARGET = mode;
+
+  // ==========================================
+  // 2. Common custom rules
+  // ==========================================
+
+  // PROXY_TARGET is a placeholder.
+  // It will be replaced with NCloud or JMS.
+
+  const commonRules = [
     // GitHub
-    "DOMAIN-SUFFIX,github.com,NCloud",
-    "DOMAIN-SUFFIX,githubusercontent.com,NCloud",
-    "DOMAIN-SUFFIX,githubassets.com,NCloud",
-
-    // OpenAI
-    "DOMAIN-SUFFIX,chatgpt.com,NCloud",
-    "DOMAIN-SUFFIX,openai.com,NCloud",
-    "DOMAIN-SUFFIX,oaiusercontent.com,NCloud",
-    "DOMAIN-SUFFIX,oaistatic.com,NCloud",
-
-    // Gemini
-    "DOMAIN-SUFFIX,gemini.google.com,NCloud",
-    "DOMAIN-SUFFIX,aistudio.google.com,NCloud",
+    "DOMAIN-SUFFIX,github.com,PROXY_TARGET",
+    "DOMAIN-SUFFIX,githubusercontent.com,PROXY_TARGET",
+    "DOMAIN-SUFFIX,githubassets.com,PROXY_TARGET",
 
     // Microsoft
     "DOMAIN-SUFFIX,login.live.com,DIRECT",
@@ -24,8 +69,8 @@ function main(config, profileName) {
     "DOMAIN-SUFFIX,store.microsoft.com,DIRECT",
 
     // Zeal
-    "DOMAIN-SUFFIX,zealdocs.org,NCloud",
-    "DOMAIN-SUFFIX,kapeli.com,NCloud",
+    "DOMAIN-SUFFIX,zealdocs.org,PROXY_TARGET",
+    "DOMAIN-SUFFIX,kapeli.com,PROXY_TARGET",
 
     // HSBC Hong Kong
     "DOMAIN-SUFFIX,hsbc.com.hk,DIRECT",
@@ -50,6 +95,14 @@ function main(config, profileName) {
     "DOMAIN-SUFFIX,tencent.com,DIRECT",
     "DOMAIN-SUFFIX,qq.com,DIRECT",
     "DOMAIN-SUFFIX,gtimg.com,DIRECT",
+
+    // Bilibili
+    "DOMAIN-SUFFIX,bilibili.com,DIRECT",
+    "DOMAIN-SUFFIX,bilibili.tv,DIRECT",
+    "DOMAIN-SUFFIX,bilivideo.com,DIRECT",
+    "DOMAIN-SUFFIX,bilivideo.cn,DIRECT",
+    "DOMAIN-SUFFIX,hdslb.com,DIRECT",
+    "DOMAIN-SUFFIX,biliapi.net,DIRECT",
 
     // pip / Conda domestic mirrors
     "DOMAIN,pypi.tuna.tsinghua.edu.cn,DIRECT",
@@ -92,27 +145,28 @@ function main(config, profileName) {
     "DOMAIN-SUFFIX,wise.com,DIRECT",
 
     // Telegram - Windows
-    "PROCESS-NAME,Telegram.exe,NCloud",
+    "PROCESS-NAME,Telegram.exe,PROXY_TARGET",
 
     // Telegram - macOS
-    "PROCESS-NAME,Telegram,NCloud",
+    "PROCESS-NAME,Telegram,PROXY_TARGET",
 
-    "DOMAIN-SUFFIX,telegram.org,NCloud",
-    "DOMAIN-SUFFIX,telegram.me,NCloud",
-    "DOMAIN-SUFFIX,t.me,NCloud",
-    "DOMAIN-SUFFIX,telegra.ph,NCloud",
-    "DOMAIN-SUFFIX,tdesktop.com,NCloud",
+    // Telegram domains
+    "DOMAIN-SUFFIX,telegram.org,PROXY_TARGET",
+    "DOMAIN-SUFFIX,telegram.me,PROXY_TARGET",
+    "DOMAIN-SUFFIX,t.me,PROXY_TARGET",
+    "DOMAIN-SUFFIX,telegra.ph,PROXY_TARGET",
+    "DOMAIN-SUFFIX,tdesktop.com,PROXY_TARGET",
 
     // Telegram IP ranges
-    "IP-CIDR,91.108.56.0/22,NCloud,no-resolve",
-    "IP-CIDR,91.108.4.0/22,NCloud,no-resolve",
-    "IP-CIDR,91.108.8.0/22,NCloud,no-resolve",
-    "IP-CIDR,91.108.16.0/22,NCloud,no-resolve",
-    "IP-CIDR,91.108.12.0/22,NCloud,no-resolve",
-    "IP-CIDR,149.154.160.0/20,NCloud,no-resolve",
-    "IP-CIDR,91.105.192.0/23,NCloud,no-resolve",
-    "IP-CIDR,91.108.20.0/22,NCloud,no-resolve",
-    "IP-CIDR,185.76.151.0/24,NCloud,no-resolve",
+    "IP-CIDR,91.108.56.0/22,PROXY_TARGET,no-resolve",
+    "IP-CIDR,91.108.4.0/22,PROXY_TARGET,no-resolve",
+    "IP-CIDR,91.108.8.0/22,PROXY_TARGET,no-resolve",
+    "IP-CIDR,91.108.16.0/22,PROXY_TARGET,no-resolve",
+    "IP-CIDR,91.108.12.0/22,PROXY_TARGET,no-resolve",
+    "IP-CIDR,149.154.160.0/20,PROXY_TARGET,no-resolve",
+    "IP-CIDR,91.105.192.0/23,PROXY_TARGET,no-resolve",
+    "IP-CIDR,91.108.20.0/22,PROXY_TARGET,no-resolve",
+    "IP-CIDR,185.76.151.0/24,PROXY_TARGET,no-resolve",
 
     // Zhejiang University VPN
     "DOMAIN-SUFFIX,zju.edu.cn,DIRECT",
@@ -122,94 +176,164 @@ function main(config, profileName) {
     "DOMAIN-SUFFIX,interactivebrokers.com,DIRECT"
   ];
 
-  // Detect available proxy groups and nodes.
-  const groupNames = Array.isArray(config["proxy-groups"])
-    ? config["proxy-groups"]
-        .filter(group => group && typeof group.name === "string")
-        .map(group => group.name)
-    : [];
+  // ==========================================
+  // 3. NCloud AI rules
+  // ==========================================
 
-  const proxyNames = Array.isArray(config.proxies)
-    ? config.proxies
-        .filter(proxy => proxy && typeof proxy.name === "string")
-        .map(proxy => proxy.name)
-    : [];
+  const ncloudAIRules = [
+    // OpenAI / ChatGPT
+    "DOMAIN-SUFFIX,chatgpt.com,PROXY_TARGET",
+    "DOMAIN-SUFFIX,openai.com,PROXY_TARGET",
+    "DOMAIN-SUFFIX,oaiusercontent.com,PROXY_TARGET",
+    "DOMAIN-SUFFIX,oaistatic.com,PROXY_TARGET",
 
-  const availableNames = new Set([
-    ...groupNames,
-    ...proxyNames
-  ]);
+    // Google AI
+    "DOMAIN-SUFFIX,gemini.google.com,PROXY_TARGET",
+    "DOMAIN-SUFFIX,aistudio.google.com,PROXY_TARGET"
+  ];
 
-  // Choose the proxy target for the active subscription.
-  let proxyTarget = null;
+  // ==========================================
+  // 4. JMS AI supplementary rules
+  // ==========================================
 
-  if (availableNames.has("NCloud")) {
-    proxyTarget = "NCloud";
-  } else if (availableNames.has("JMS")) {
-    proxyTarget = "JMS";
-  } else if (availableNames.has("JMS Auto")) {
-    proxyTarget = "JMS Auto";
+  // The external JMS AI rules do not explicitly
+  // include every domain from the original rules.
+  // Keep a minimal supplementary list.
+
+  const jmsAISupplementRules = [
+    "DOMAIN-SUFFIX,aistudio.google.com,PROXY_TARGET"
+  ];
+
+  // ==========================================
+  // 5. Configure the remote JMS AI rule provider
+  // ==========================================
+
+  const jmsProviderName = "jms-ai-services";
+
+  if (mode === "JMS") {
+    if (
+      !config["rule-providers"] ||
+      typeof config["rule-providers"] !== "object" ||
+      Array.isArray(config["rule-providers"])
+    ) {
+      config["rule-providers"] = {};
+    }
+
+    config["rule-providers"][jmsProviderName] = {
+      type: "http",
+      behavior: "classical",
+      url: "https://raw.githubusercontent.com/justmysocks-guide/clash-rules/main/rules/ai-services.yaml",
+      path: "./ruleset/jms-ai-services.yaml",
+      interval: 86400
+    };
   }
 
-  // Resolve NCloud placeholders dynamically.
-  const resolvedRules = customRules.flatMap(rule => {
-    if (!rule.includes(",NCloud")) {
-      return [rule];
-    }
+  // ==========================================
+  // 6. Build rules for the active subscription
+  // ==========================================
 
-    if (!proxyTarget) {
-      return [];
-    }
+  // Common rules always apply.
+  const selectedRules = [...commonRules];
 
-    return [
-      rule.replace(
-        /,NCloud(?=,|$)/g,
-        `,${proxyTarget}`
-      )
-    ];
-  });
+  if (mode === "NCloud") {
+    // Use manually maintained AI rules.
+    selectedRules.push(...ncloudAIRules);
+  }
 
-  // Remove old versions of managed rules, including rules
-  // that previously targeted another proxy group.
-  const managedRuleKeys = new Set(
-    customRules.map(rule =>
-      rule.split(",").slice(0, 2).join(",")
+  if (mode === "JMS") {
+    // Add only the AI domains missing from
+    // the external JMS rule provider.
+    selectedRules.push(...jmsAISupplementRules);
+
+    // Main AI matching comes from the remote rule set.
+    selectedRules.push(
+      `RULE-SET,${jmsProviderName},PROXY_TARGET`
+    );
+  }
+
+  // Replace only the proxy target placeholder.
+  const resolvedRules = selectedRules.map(rule =>
+    rule.replace(
+      /PROXY_TARGET/g,
+      PROXY_TARGET
     )
   );
+
+  // ==========================================
+  // 7. Merge rules without deleting original rules
+  // ==========================================
 
   if (!Array.isArray(config.rules)) {
     config.rules = [];
   }
 
-  config.rules = config.rules.filter(rule => {
-    if (typeof rule !== "string") return true;
+  // Preserve existing subscription rules in their
+  // original relative order.
+  //
+  // Identical rules are not inserted twice.
+  // Rules with the same domain but different actions
+  // remain intact in the subscription.
 
-    const key = rule.split(",").slice(0, 2).join(",");
-    return !managedRuleKeys.has(key);
-  });
+  const existingRules = config.rules;
+  const existingRuleSet = new Set(existingRules);
 
-  // Custom rules take precedence.
-  config.rules.unshift(...resolvedRules);
+  const rulesToPrepend = resolvedRules.filter(
+    rule => !existingRuleSet.has(rule)
+  );
 
-  // DNS: preserve the existing local listener configuration.
-  if (!config.dns || typeof config.dns !== "object") {
-    config.dns = {};
-  }
-
-  config.dns.enable = true;
-  config.dns.listen = "127.0.0.1:53";
-
-  // TUN: preserve the existing IPv4 /1 route workaround.
-  if (!config.tun || typeof config.tun !== "object") {
-    config.tun = {};
-  }
-
-  config.tun["auto-route"] = true;
-  config.tun["auto-detect-interface"] = true;
-  config.tun["route-address"] = [
-    "0.0.0.0/1",
-    "128.0.0.0/1"
+  config.rules = [
+    ...rulesToPrepend,
+    ...existingRules
   ];
+
+
+  // ==========================================
+  // 8. DEVICE-SPECIFIC DNS / TUN SETTINGS
+  // ==========================================
+  //
+  // ★★★★★ DEVICE SWITCH ★★★★★
+  //
+  // Home Windows desktop: true
+  // Office Windows PC:    false
+  // MacBook:              false
+  //
+  // Change ONLY the value below.
+  // ==========================================
+
+  const ENABLE_HOME_WINDOWS_FIX = true;
+
+  // ==========================================
+  // BEGIN: HOME WINDOWS ONLY
+  // Do not change the tested settings below.
+  // ==========================================
+
+  if (ENABLE_HOME_WINDOWS_FIX) {
+
+    // DNS: local Mihomo DNS listener
+    if (!config.dns || typeof config.dns !== "object") {
+      config.dns = {};
+    }
+
+    config.dns.enable = true;
+    config.dns.listen = "127.0.0.1:53";
+
+    // TUN: tested IPv4 /1 routing workaround
+    if (!config.tun || typeof config.tun !== "object") {
+      config.tun = {};
+    }
+
+    config.tun["auto-route"] = true;
+    config.tun["auto-detect-interface"] = true;
+    config.tun["route-address"] = [
+      "0.0.0.0/1",
+      "128.0.0.0/1"
+    ];
+
+  }
+
+  // ==========================================
+  // END: HOME WINDOWS ONLY
+  // ==========================================
 
   return config;
 }
