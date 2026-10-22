@@ -58,6 +58,11 @@ function main(config, profileName) {
   // It will be replaced with NCloud or JMS.
 
   const commonRules = [
+
+    // Bing
+    "DOMAIN-SUFFIX,bing.com,DIRECT",
+    "DOMAIN-SUFFIX,bing.net,DIRECT",
+
     // GitHub
     "DOMAIN-SUFFIX,github.com,PROXY_TARGET",
     "DOMAIN-SUFFIX,githubusercontent.com,PROXY_TARGET",
@@ -300,7 +305,7 @@ function main(config, profileName) {
   // Change ONLY the value below.
   // ==========================================
 
-  const ENABLE_HOME_WINDOWS_FIX = true;
+  const ENABLE_HOME_WINDOWS_FIX = false;
 
   // ==========================================
   // BEGIN: HOME WINDOWS ONLY
