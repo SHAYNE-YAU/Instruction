@@ -1,12 +1,16 @@
+
 // Clash Verge Rev - Global Extension
 // Compatible with NCloud and Just My Socks (JMS).
 //
 // NCloud: use original custom AI rules.
 // JMS: use remote AI rule set with local supplements.
 //
+// Device switch:
+//   true  = enable home DNS/TUN fixes and OpenAI UDP/443 blocking in JMS.
+//   false = preserve device DNS/TUN settings and do not add UDP/443 blocking.
+//
 // Custom rules take precedence.
 // Subscription rules are preserved.
-// Device-specific DNS and TUN settings are not overwritten.
 
 function main(config, profileName) {
   if (!config || typeof config !== "object") {
@@ -33,7 +37,6 @@ function main(config, profileName) {
   } else if (hasNCloud && !hasJMS) {
     mode = "NCloud";
   } else if (hasJMS && hasNCloud) {
-    // If both are present, use the subscription profile name.
     const name = String(profileName || "").toLowerCase();
 
     if (name.includes("jms") || name.includes("just my socks")) {
@@ -51,14 +54,26 @@ function main(config, profileName) {
   const PROXY_TARGET = mode;
 
   // ==========================================
-  // 2. Common custom rules
+  // 2. DEVICE SWITCH
+  // ==========================================
+  //
+  // Home Windows desktop: true
+  // Office Windows PC:    false
+  // Laptop:               false (until tested)
+  //
+  // This single switch controls BOTH:
+  // 1. Home DNS/TUN settings
+  // 2. OpenAI UDP/443 blocking in JMS mode
+  //
+  // Change ONLY this value for each device.
+
+  const ENABLE_HOME_WINDOWS_FIX = true;
+
+  // ==========================================
+  // 3. Common custom rules
   // ==========================================
 
-  // PROXY_TARGET is a placeholder.
-  // It will be replaced with NCloud or JMS.
-
   const commonRules = [
-
     // Bing
     "DOMAIN-SUFFIX,bing.com,DIRECT",
     "DOMAIN-SUFFIX,bing.net,DIRECT",
@@ -182,7 +197,7 @@ function main(config, profileName) {
   ];
 
   // ==========================================
-  // 3. NCloud AI rules
+  // 4. NCloud AI rules
   // ==========================================
 
   const ncloudAIRules = [
@@ -198,19 +213,29 @@ function main(config, profileName) {
   ];
 
   // ==========================================
-  // 4. JMS AI supplementary rules
+  // 5. JMS AI supplementary rules
   // ==========================================
 
-  // The external JMS AI rules do not explicitly
-  // include every domain from the original rules.
-  // Keep a minimal supplementary list.
+  // The UDP/443 rules are added ONLY when
+  // ENABLE_HOME_WINDOWS_FIX is true.
+  //
+  // They are used as a workaround for the tested
+  // OpenAI UDP routing issue on the home PC.
 
   const jmsAISupplementRules = [
+    ...(ENABLE_HOME_WINDOWS_FIX
+      ? [
+          "AND,((NETWORK,UDP),(DST-PORT,443),(DOMAIN-SUFFIX,chatgpt.com)),REJECT",
+          "AND,((NETWORK,UDP),(DST-PORT,443),(DOMAIN-SUFFIX,openai.com)),REJECT"
+        ]
+      : []),
+
+    // Google AI supplementary rule
     "DOMAIN-SUFFIX,aistudio.google.com,PROXY_TARGET"
   ];
 
   // ==========================================
-  // 5. Configure the remote JMS AI rule provider
+  // 6. Configure the remote JMS AI rule provider
   // ==========================================
 
   const jmsProviderName = "jms-ai-services";
@@ -234,23 +259,20 @@ function main(config, profileName) {
   }
 
   // ==========================================
-  // 6. Build rules for the active subscription
+  // 7. Build rules for the active subscription
   // ==========================================
 
-  // Common rules always apply.
   const selectedRules = [...commonRules];
 
   if (mode === "NCloud") {
-    // Use manually maintained AI rules.
+    // NCloud keeps the original manually maintained AI rules.
     selectedRules.push(...ncloudAIRules);
   }
 
   if (mode === "JMS") {
-    // Add only the AI domains missing from
-    // the external JMS rule provider.
+    // Local supplements precede the remote AI rule set.
     selectedRules.push(...jmsAISupplementRules);
 
-    // Main AI matching comes from the remote rule set.
     selectedRules.push(
       `RULE-SET,${jmsProviderName},PROXY_TARGET`
     );
@@ -258,26 +280,16 @@ function main(config, profileName) {
 
   // Replace only the proxy target placeholder.
   const resolvedRules = selectedRules.map(rule =>
-    rule.replace(
-      /PROXY_TARGET/g,
-      PROXY_TARGET
-    )
+    rule.replace(/PROXY_TARGET/g, PROXY_TARGET)
   );
 
   // ==========================================
-  // 7. Merge rules without deleting original rules
+  // 8. Merge rules without deleting original rules
   // ==========================================
 
   if (!Array.isArray(config.rules)) {
     config.rules = [];
   }
-
-  // Preserve existing subscription rules in their
-  // original relative order.
-  //
-  // Identical rules are not inserted twice.
-  // Rules with the same domain but different actions
-  // remain intact in the subscription.
 
   const existingRules = config.rules;
   const existingRuleSet = new Set(existingRules);
@@ -291,26 +303,17 @@ function main(config, profileName) {
     ...existingRules
   ];
 
-
   // ==========================================
-  // 8. DEVICE-SPECIFIC DNS / TUN SETTINGS
+  // 9. DEVICE-SPECIFIC DNS / TUN SETTINGS
   // ==========================================
   //
-  // ★★★★★ DEVICE SWITCH ★★★★★
+  // Uses the SAME switch as the OpenAI UDP/443 rules.
   //
-  // Home Windows desktop: true
-  // Office Windows PC:    false
-  // MacBook:              false
+  // true:
+  //   Enable home DNS listener and tested TUN settings.
   //
-  // Change ONLY the value below.
-  // ==========================================
-
-  const ENABLE_HOME_WINDOWS_FIX = false;
-
-  // ==========================================
-  // BEGIN: HOME WINDOWS ONLY
-  // Do not change the tested settings below.
-  // ==========================================
+  // false:
+  //   Leave existing DNS/TUN settings untouched.
 
   if (ENABLE_HOME_WINDOWS_FIX) {
 
@@ -333,12 +336,7 @@ function main(config, profileName) {
       "0.0.0.0/1",
       "128.0.0.0/1"
     ];
-
   }
-
-  // ==========================================
-  // END: HOME WINDOWS ONLY
-  // ==========================================
 
   return config;
 }
