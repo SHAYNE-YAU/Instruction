@@ -67,7 +67,7 @@ function main(config, profileName) {
   //
   // Change ONLY this value for each device.
 
-  const ENABLE_HOME_WINDOWS_FIX = true;
+  const ENABLE_HOME_WINDOWS_FIX = false;
 
   // ==========================================
   // 3. Common custom rules
@@ -102,14 +102,22 @@ function main(config, profileName) {
     "DOMAIN-SUFFIX,jd.com,DIRECT",
     "DOMAIN-SUFFIX,jd.hk,DIRECT",
     "DOMAIN-SUFFIX,360buy.com,DIRECT",
+    "DOMAIN-SUFFIX,360buyimg.com,DIRECT",
+    "DOMAIN-SUFFIX,jdimg.com,DIRECT",
+    "DOMAIN-SUFFIX,jdpay.com,DIRECT",
+    "DOMAIN-SUFFIX,3.cn,DIRECT",
 
     // Taobao
     "DOMAIN-SUFFIX,taobao.com,DIRECT",
+    "DOMAIN-SUFFIX,taobao.net,DIRECT",
+    "DOMAIN-SUFFIX,tb.cn,DIRECT",
     "DOMAIN-SUFFIX,tmall.com,DIRECT",
+    "DOMAIN-SUFFIX,tmall.hk,DIRECT",
 
     // Alipay
     "DOMAIN-SUFFIX,alipay.com,DIRECT",
     "DOMAIN-SUFFIX,alipayobjects.com,DIRECT",
+    "DOMAIN-SUFFIX,alicdn.com,DIRECT",
 
     // Tencent
     "DOMAIN-SUFFIX,tencent.com,DIRECT",
